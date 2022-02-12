@@ -46,6 +46,12 @@ An example of how to use the library:
 CODE HERE
 ```
 
+## Installation
+Future improvements:
+    - Add check to ensure the setup finalized properly.
+    - Change patterns so that every conversation has a unique socket.
+    - Encrypt communications.
+
 ## Citation
 This repository is part of a research article carried out by [ALFA](https://alfa.webs.upv.es/) research group.
 Spanish Patent Application (P202130890).

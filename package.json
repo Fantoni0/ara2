@@ -1,0 +1,17 @@
+{
+  "name": "ara2",
+  "description": "A PoC for Anonymous registration and anonymous access",
+  "author": "Fantoni0",
+  "scripts": {
+    "test": "standard"
+  },
+  "dependencies": {
+    "bignumber.js": "^9.0.2",
+    "dotenv": "^16.0.0",
+    "minimist": "^1.2.5",
+    "zeromq": "^5.2.8"
+  },
+  "devDependencies": {
+    "standard": "^16.0.4"
+  }
+}
