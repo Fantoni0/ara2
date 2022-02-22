@@ -3,13 +3,12 @@
 const Dealer = require('./Dealer')
 const Guard = require('./Guard')
 const Proxy = require('./Proxy')
+const User = require('./User')
 
 // Required packages
 const minimist = require('minimist')
 //const { exec } = require('child_process');
 require('dotenv').config()
-
-
 
 // Get arguments
 const args = minimist(process.argv.slice(2), {})
@@ -19,6 +18,7 @@ const guards = args.hasOwnProperty('g') ? args['g'] : 4
 const bitsize = args.hasOwnProperty('b') ? args['b'] : 128
 const modulo = args.hasOwnProperty('p') ? BigInt(args['p']) : BigInt(373587923)
 const mode = args.hasOwnProperty('m') ? args['m'] : 'ARA2'
+const requests = args.hasOwnProperty('r') ? args['r'] : 10
 
 // Prepare params
 const maxDegree = BigInt(2**bitsize - 1)
@@ -27,6 +27,11 @@ const dealersPush = process.env["DEALER_PORTS_PUSH"].split(',')
 const dealersPub = process.env["DEALERS_PORTS_PUB"].split(',')
 const guardsIps = process.env["GUARD_ADDRESSES"].split(',')
 const guardsPush = process.env["GUARD_PORTS_PUSH"].split(',')
+const guardsPub = process.env["GUARD_PORTS_PUB"].split(',')
+const proxyAddress = process.env["PROXY_ADDRESS"]
+const proxyPortPull = process.env["PROXY_PORT_PULL"]
+const proxyPortPubDealers = process.env["PROXY_PORT_PUB_DEALERS"]
+const proxyPortPubGuards = process.env["PROXY_PORT_PUB_GUARDS"]
 
 const params = {
   maxBits: bitsize,
@@ -34,7 +39,13 @@ const params = {
   modulo: modulo,
   mode: mode,
   dealersIps: dealersIps,
-  dealersPorts: dealersPub
+  guardsIps: guardsIps,
+  dealersPushPorts: dealersPush,
+  guardsPushPorts: guardsPush,
+  dealersPorts: dealersPub,
+  proxyAddress: proxyAddress,
+  proxyPortPubDealers: proxyPortPubDealers,
+  proxyPortPubGuards: proxyPortPubGuards
 }
 
 // Launch services
@@ -47,12 +58,7 @@ for (let i = 0; i < dealers; i++) {
       params);
   dealer.init().then(() => {
     console.log("Dealer: " + i + " launched!")
-    if (mode === 'ARA'){
-      console.log("DEALER SECRET = ", dealer.secret)
-    } else {
-      console.log("DEALER SECRET= ")
-      dealer.secret.forEach((v,k) => {console.log("[" + k.toString() + "]", v.toString())})
-    }
+    console.log("DEALER SECRET = ", dealer.secret)
   })
 }
 setTimeout(() => {
@@ -60,36 +66,46 @@ setTimeout(() => {
     let guard = new Guard (i + 1,
         guardsIps[i],
         guardsPush[i],
-        dealersPub[i],
+        guardsPub[i],
         dealers,
+        guards,
         params)
     guard.init().then(() => {
       console.log("Guard: " + i + " launched!")
-      if (mode === 'ARA'){
-        console.log("GUARD SECRET = ", guard.secret)
-      } else {
-        console.log("GUARD SECRET= ")
-        guard.secret.forEach((v,k) => {console.log("[" + k.toString() + "]", v.toString())})
-      }
     })
   }
-}, 4000)
+}, 1000)
+
+setTimeout(() => {
+  const proxy = new Proxy (
+    proxyAddress,
+    proxyPortPull,
+    dealers,
+    guards,
+    proxyPortPubDealers,
+    proxyPortPubGuards,
+    params
+  )
+  proxy.init().then(() => {
+    console.log("Proxy Launched")
+  })
+}, 2000)
 
 
-function launchCommand (command) {
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`error: ${error.message}`);
-      return;
-    }
+setTimeout(() => {
+  let user = new User (
+    process.env["USER_ADDRESS"],
+    proxyAddress,
+    proxyPortPull,
+    requests,
+    dealers,
+    guards,
+    params
+  )
+  user.init().then(() => {
+    console.log("User launched!")
+  })
+}, 2500)
 
-    if (stderr) {
-      console.error(`stderr: ${stderr}`);
-      return;
-    }
-
-    console.log(`stdout:\n${stdout}`);
-  });
-}
 
 

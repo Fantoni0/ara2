@@ -5,8 +5,10 @@ const crypto = require("crypto");
 
 // Required Classes
 const utils = require("./Utils");
+const util = require("util");
 
-
+BigInt.prototype.toJSON = function() { return this.toString() }
+BigInt.prototype.fromJSON = function() { return BigInt(this) }
 
 class Dealer {
 
@@ -19,30 +21,64 @@ class Dealer {
     this.nGuards = nGuards;
     this.pushSocket = zmq.socket('push')
     this.pubSocket = zmq.socket('pub')
-    this.usedCredentials = new Map()
+    this.subSocket = zmq.socket("sub")
+    this.usedIds = new Map()
+    this.requests = new Map()
     this.maxDegree = params.maxDegree
     this.termsPolynomial = crypto.randomInt(3, 5)
     this.maxBits = params.maxBits
     this.modulo = BigInt(params.modulo)
     this.mode = params.mode
+    this.proxyAddress = params.proxyAddress
+    this.proxyPortPubDealers = params.proxyPortPubDealers
     this.secretParts = []
-    this.secret = this.mode === 'ARA2' ? BigInt(0) : new Map()
+    this.secret = this.mode === 'ARA2' ? BigInt(0) : []
   }
 
   async init () {
     await this.pushSocket.bind('tcp://' + this.address + ':' + this.portPush)
-    console.log('DEALER= tcp://' + this.address + ':' + this.portPub)
     await this.pubSocket.bind('tcp://' + this.address + ':' + this.portPub)
-    this.pushSocket.on("message", (msg) => this.handleProxy(msg))
+    console.log('tcp://' + this.proxyAddress + ':' + this.proxyPortPubDealers)
+    await this.subSocket.connect('tcp://' + this.proxyAddress + ':' + this.proxyPortPubDealers)
+    this.subSocket.subscribe("")
+    this.subSocket.on("message", (msg) => this.handleProxy(msg))
     this.pubSocket.on("message", (msg) => this.handleGuard(msg))
     this.generateRandomSecrets()
     const parent = this;
-    setTimeout( () => parent.distributePartialSecretsToGuards(), 5000)
-    //setInterval(()=> console.log("ALIVE"), 5000)
+    setTimeout( () => parent.distributePartialSecretsToGuards(), 2000)
   }
 
   async handleProxy (msg) {
-    console.log("!TODO")
+    const message = JSON.parse(msg)
+    console.log("MENSAJE DE LA PROXY", message)
+    message.value = BigInt(message.value)
+    let response
+    if (this.usedIds.has(message.id)) {
+      response = {
+        id: message.id,
+        value: NaN,
+        message: "The identification was already used",
+        dealer: this.id,
+        success: false
+      }
+    } else {
+      this.requests.set(message.id, message)
+      this.usedIds.set(message.id, message)
+      let value
+      if (this.mode === "ARA2") {
+        value = (message.value ** this.secret) % this.modulo
+      } else {
+        value = utils.evaluatePolynomial(this.secret, message.value)
+      }
+      response = {
+        id: message.id,
+        value: value,
+        message: "Here is your token",
+        dealer: this.id,
+        success: true
+      }
+    }
+    this.pushSocket.send(JSON.stringify(response))
   }
 
   async handleGuard (msg) {
@@ -56,9 +92,9 @@ class Dealer {
         receiver: "Guard: " + i,
         partialSecret: this.mode === 'ARA2' ?
             this.secretParts[i].toString() :
-            JSON.stringify(this.secretParts[i], utils.replacer)
+            JSON.stringify(this.secretParts[i])
       }
-      console.log("ENVIANDO paquete" +JSON.stringify(msg)+ ". DEl dealer" +this.id+ "para el guardia" + i)
+      //console.log("ENVIANDO paquete" +JSON.stringify(msg)+ ". DEl dealer" +this.id+ "para el guardia" + i)
       this.pubSocket.send([i + 1, JSON.stringify(msg)])
     }
   }
@@ -72,42 +108,31 @@ class Dealer {
       }
     } else {
       for (let i = 0; i < this.nGuards; i++) {
-        const pol = this.generateRandomPolynomial()
+        let pol = this.generateRandomPolynomial()
         this.secretParts.push(pol)
-        this.secret = utils.addPolynomials(this.secret, pol)
+        this.secret = utils.addPolynomials(this.secret, utils.clonePolynomial(pol))
       }
     }
   }
 
   generateRandomExponent () {
-    return BigInt(this.randomDecimalString(Math.ceil(this.maxBits / 4)))
+    return BigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
   }
 
   generateRandomPolynomial () {
-    // The polynomial is encoded as a Map of values (degree, coefficient)
-    const poly = new Map()
+    const poly = []
     for (let i = 0; i < this.termsPolynomial; i++) {
-      const degree = BigInt(this.randomDecimalString(Math.ceil(this.maxBits / 4)))
-      const coefficient = BigInt(this.randomDecimalString(Math.ceil(this.maxBits / 4)))
-      if (poly.has(degree)) {
-        poly.set(degree, poly.get(degree) + coefficient)
-      } else {
-        poly.set(degree, coefficient)
-      }
+      const degree = BigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
+      const coefficient = BigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
+      poly.push({
+        degree: degree,
+        coefficient: coefficient
+      })
     }
-    return poly
+    return utils.removePolynomialDuplicates(utils.sortPolynomial(poly))
   }
 
-  // Sketchy
-  // TODO: Add hash
-  randomDecimalString (len) {
-    let str = ''
-    for (let i = 0; i  < len; i++) {
-      str += crypto.randomInt(0, 4)
-    }
-    return str
 
-  }
 
 }
 
