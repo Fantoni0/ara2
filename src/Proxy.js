@@ -15,6 +15,7 @@ class Proxy {
     this.nGuards = nGuards
     this.portPubDealers = dealersPub
     this.portPubGuards = guardsPub
+    this.pushUser = zmq.socket('push')
     this.pullUsers = zmq.socket('pull')
     this.pubDealers = zmq.socket('pub')
     this.pubGuards = zmq.socket('pub')
@@ -24,6 +25,8 @@ class Proxy {
     this.guardsIps = params.guardsIps
     this.dealersPushPorts = params.dealersPushPorts
     this.guardsPushPorts = params.guardsPushPorts
+    this.userAddress = params.userAddress
+    this.userPortPush = params.userPortPush
     this.requests = new Map()
     this.requestsAccess = new Map ()
     this.nRequests = 0
@@ -38,7 +41,7 @@ class Proxy {
 
   async init () {
     // Bind sockets
-    await this.pullUsers.connect('tcp://' + this.address + ':' + this.portPull)
+    await this.pullUsers.bind('tcp://' + this.address + ':' + this.portPull)
     console.log(' PROXY tcp://' + this.address + ':' + this.portPubDealers)
     await this.pubDealers.bind('tcp://' + this.address + ':' + this.portPubDealers)
     await this.pubGuards.bind('tcp://' + this.address + ':' + this.portPubGuards)
@@ -81,6 +84,7 @@ class Proxy {
         value: request.message.value,
         responses: request.dealerResponses
       }
+      console.log("PROXY- Response from proxy.-dealers to user", response)
       this.pullUsers.send(JSON.stringify(response))
     }
   }

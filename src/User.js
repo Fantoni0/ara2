@@ -15,6 +15,7 @@ class User {
     this.numberOfSimulations = requests
     this.requests = new Map()
     this.pushProxy = zmq.socket('push')
+    this.pullProxy = zmq.socket('pull')
     this.nDealers = nDealers
     this.nGuards = nGuards
     this.mode = params.mode
@@ -26,8 +27,8 @@ class User {
 
   async init() {
     // Bind sockets
-    await this.pushProxy.bind('tcp://' + this.proxyAddress + ':' + this.proxyPort)
-    this.pushProxy.on('message', (msg) => this.handleProxy(msg))
+    await this.pushProxy.connect('tcp://' + this.proxyAddress + ':' + this.proxyPort)
+    this.pushProxy.on("message", (msg) => this.handleProxy(msg))
     this.interval = setInterval(() => {this.sendMsgProxy()}, 1000)
   }
 

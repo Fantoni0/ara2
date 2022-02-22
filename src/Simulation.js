@@ -32,6 +32,8 @@ const proxyAddress = process.env["PROXY_ADDRESS"]
 const proxyPortPull = process.env["PROXY_PORT_PULL"]
 const proxyPortPubDealers = process.env["PROXY_PORT_PUB_DEALERS"]
 const proxyPortPubGuards = process.env["PROXY_PORT_PUB_GUARDS"]
+const userAddress = process.env["USER_ADDRESS"]
+const userPortPush = process.env["USER_PUSH_PORT"]
 
 const params = {
   maxBits: bitsize,
@@ -45,7 +47,9 @@ const params = {
   dealersPorts: dealersPub,
   proxyAddress: proxyAddress,
   proxyPortPubDealers: proxyPortPubDealers,
-  proxyPortPubGuards: proxyPortPubGuards
+  proxyPortPubGuards: proxyPortPubGuards,
+  userAddress: userAddress,
+  userPortPush: userPortPush
 }
 
 // Launch services
