@@ -18,6 +18,7 @@ class User {
     this.pullProxy = zmq.socket('pull')
     this.nDealers = nDealers
     this.nGuards = nGuards
+    this.userPullPort = params.userPortPull
     this.mode = params.mode
     this.modulo = params.modulo
     this.maxBits = params.maxBits
@@ -28,22 +29,25 @@ class User {
   async init() {
     // Bind sockets
     await this.pushProxy.connect('tcp://' + this.proxyAddress + ':' + this.proxyPort)
-    this.pushProxy.on("message", (msg) => this.handleProxy(msg))
+    await this.pullProxy.connect('tcp://' + this.address + ':' + this.userPullPort)
+    console.log('PUSH USER tcp://' + this.proxyAddress + ':' + this.proxyPort)
+    this.pullProxy.on("message", (msg) => this.handleProxy(msg))
     this.interval = setInterval(() => {this.sendMsgProxy()}, 1000)
   }
 
   handleProxy(msg) {
     const message = JSON.parse(msg)
-    console.log("Respuesta de la proxy")
+    console.log("USUARIO= Respuesta de la proxy", message)
     if (message.kind === "dealers") {
       if (message.responses.length !== this.nDealers) {
         console.log("Not all dealers responded my request")
         return
       }
-      let request = this.requests.get(message.id)
+      let request = this.requests[message.id]
       if (this.mode === "ARA2") console.log("//TODO: desencriptar valor")
-      request.set("token",[request.value,
-        request.responses.reduce((x,y) => {return x.value + y.value})])
+      request.responses = message.responses
+      request["token"] = [request.value,
+        message.responses.reduce((x,y) => {return x.value + y.value})]
 
       // Once the token has been obtained, we can ask for access.
       // Anonymous Id is added to facilitate the handling of access requests by the

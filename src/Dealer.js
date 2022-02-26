@@ -42,7 +42,7 @@ class Dealer {
     await this.subSocket.connect('tcp://' + this.proxyAddress + ':' + this.proxyPortPubDealers)
     this.subSocket.subscribe("")
     this.subSocket.on("message", (msg) => this.handleProxy(msg))
-    this.pubSocket.on("message", (msg) => this.handleGuard(msg))
+    //this.pubSocket.on("message", (msg) => this.handleGuard(msg))
     this.generateRandomSecrets()
     const parent = this;
     setTimeout( () => parent.distributePartialSecretsToGuards(), 2000)
@@ -50,7 +50,7 @@ class Dealer {
 
   async handleProxy (msg) {
     const message = JSON.parse(msg)
-    console.log("MENSAJE DE LA PROXY", message)
+    console.log("Dealer: MENSAJE DE LA PROXY", message)
     message.value = BigInt(message.value)
     let response
     if (this.usedIds.has(message.id)) {
@@ -79,10 +79,6 @@ class Dealer {
       }
     }
     this.pushSocket.send(JSON.stringify(response))
-  }
-
-  async handleGuard (msg) {
-    console.log("GUARD CONNECTED")
   }
 
   async distributePartialSecretsToGuards () {

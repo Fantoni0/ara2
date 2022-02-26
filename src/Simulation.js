@@ -33,7 +33,7 @@ const proxyPortPull = process.env["PROXY_PORT_PULL"]
 const proxyPortPubDealers = process.env["PROXY_PORT_PUB_DEALERS"]
 const proxyPortPubGuards = process.env["PROXY_PORT_PUB_GUARDS"]
 const userAddress = process.env["USER_ADDRESS"]
-const userPortPush = process.env["USER_PUSH_PORT"]
+const userPortPull = process.env["USER_PORT_PULL"]
 
 const params = {
   maxBits: bitsize,
@@ -44,15 +44,17 @@ const params = {
   guardsIps: guardsIps,
   dealersPushPorts: dealersPush,
   guardsPushPorts: guardsPush,
+  guardsPubPorts: guardsPub,
   dealersPorts: dealersPub,
   proxyAddress: proxyAddress,
   proxyPortPubDealers: proxyPortPubDealers,
   proxyPortPubGuards: proxyPortPubGuards,
   userAddress: userAddress,
-  userPortPush: userPortPush
+  userPortPull: userPortPull
 }
 
 // Launch services
+
 for (let i = 0; i < dealers; i++) {
   let dealer = new Dealer (i+1,
       dealersIps[i],
@@ -65,6 +67,7 @@ for (let i = 0; i < dealers; i++) {
     console.log("DEALER SECRET = ", dealer.secret)
   })
 }
+
 setTimeout(() => {
   for (let i = 0; i < guards; i++) {
     let guard = new Guard (i + 1,
@@ -78,7 +81,7 @@ setTimeout(() => {
       console.log("Guard: " + i + " launched!")
     })
   }
-}, 1000)
+}, 500)
 
 setTimeout(() => {
   const proxy = new Proxy (
@@ -95,7 +98,6 @@ setTimeout(() => {
   })
 }, 2000)
 
-
 setTimeout(() => {
   let user = new User (
     process.env["USER_ADDRESS"],
@@ -109,7 +111,7 @@ setTimeout(() => {
   user.init().then(() => {
     console.log("User launched!")
   })
-}, 2500)
+}, 1000)
 
 
 

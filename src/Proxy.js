@@ -26,7 +26,7 @@ class Proxy {
     this.dealersPushPorts = params.dealersPushPorts
     this.guardsPushPorts = params.guardsPushPorts
     this.userAddress = params.userAddress
-    this.userPortPush = params.userPortPush
+    this.userPortPull = params.userPortPull
     this.requests = new Map()
     this.requestsAccess = new Map ()
     this.nRequests = 0
@@ -41,17 +41,20 @@ class Proxy {
 
   async init () {
     // Bind sockets
+    // Communication with user
     await this.pullUsers.bind('tcp://' + this.address + ':' + this.portPull)
-    console.log(' PROXY tcp://' + this.address + ':' + this.portPubDealers)
+    await this.pushUser.connect('tcp://' + this.userAddress + ':' + this.userPortPull)
+    this.pullUsers.on("message", (msg) => this.handleUser(msg))
+    // Communication with Dealers
     await this.pubDealers.bind('tcp://' + this.address + ':' + this.portPubDealers)
-    await this.pubGuards.bind('tcp://' + this.address + ':' + this.portPubGuards)
-    this.pullUsers.on('message', (msg) => this.handleUser(msg))
     for (let i = 0; i < this.nDealers; i++) {
       this.pullDealers[i].connect('tcp://' + this.dealersIps[i] + ':' + this.dealersPushPorts[i])
       this.pullDealers[i].on('message', (msg) => this.handleDealer(msg))
     }
+    // Communication with guards
+    await this.pubGuards.bind('tcp://' + this.address + ':' + this.portPubGuards)
     for (let i = 0; i < this.nGuards; i++) {
-      this.pullGuards[i].connect('tcp://' + this.guardsIps[i] + ':' + this.guardsPushPorts[i])
+      this.pullGuards[i].bind('tcp://' + this.guardsIps[i] + ':' + this.guardsPushPorts[i])
       this.pullGuards[i].on('message', (msg) => this.handleGuard(msg))
     }
   }
@@ -73,8 +76,6 @@ class Proxy {
   handleDealer (msg) {
     const message = JSON.parse(msg)
     let request = this.requests.get(message.id)
-    console.log("Received response from dealer " + message.dealer)
-    console.log(request)
     request.dealerResponses.push(message)
     if (request.dealerResponses.length === this.nDealers) {
       console.log("Got response from all dealers")
@@ -84,8 +85,7 @@ class Proxy {
         value: request.message.value,
         responses: request.dealerResponses
       }
-      console.log("PROXY- Response from proxy.-dealers to user", response)
-      this.pullUsers.send(JSON.stringify(response))
+      this.pushUser.send(JSON.stringify(response))
     }
   }
 
@@ -101,7 +101,7 @@ class Proxy {
         kind: "guards",
         responses: request.guardsResponses
       }
-      this.pullUsers.send(JSON.stringify(response))
+      this.pushUser.send(JSON.stringify(response))
     }
 
   }

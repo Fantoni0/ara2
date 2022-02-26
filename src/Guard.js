@@ -18,12 +18,14 @@ class Guard {
     this.nDealers = nDealers;
     this.nGuards = nGuards;
     this.dealersIps = params.dealersIps
+    this.guardsIps = params.guardsIps
     this.dealersPorts = params.dealersPorts
+    this.guardsPubPorts = params.guardsPubPorts
     this.pushSocket = zmq.socket('push')
     this.subSocket = zmq.socket('sub')
     this.subProxy = zmq.socket("sub")
-    this.pubGuardsSocket = zmq.socket('pub')
     this.subGuardsSocket = zmq.socket('sub')
+    this.pubGuardsSocket = zmq.socket('pub')
     this.usedCredentials = new Map()
     this.requests = new Map()
     this.maxDegree = params.maxDegree
@@ -46,20 +48,23 @@ class Guard {
     // Subscribe to own messages
     this.subSocket.subscribe("")
     setTimeout(() => console.log("GUARD SECRET= ", this.secret), 5000)
+
     // Connect to Proxy
     this.subProxy.connect('tcp://' + this.proxyAddress + ':' + this.proxyPortPubGuards)
     this.subProxy.subscribe("")
     this.subProxy.on("message", (msg) => this.handleProxy(msg))
+
+    await this.pushSocket.connect('tcp://' + this.address + ':' + this.portPush)
     // Connect to other guards.
-    await this.pubGuardsSocket.bind('tcp://' + this.address + ':' + this.pubGuardsSocket[this.id - 1])
-    this.pubGuardsSocket.on("message", (msg) => this.handleGuard(msg))
+    await this.pubGuardsSocket.bind('tcp://' + this.address + ':' + this.portPub)
     setTimeout(() => {
-      for (let i = 0;  i < this.pubGuardsSocket.length; i++){
+      for (let i = 0;  i < this.guardsIps.length; i++){
         if (i === this.id - 1) continue
-        this.subGuardsSocket.connect('tcp://' + this.dealersIps[i] + ':' + this.dealersPorts[i])
+        this.subGuardsSocket.connect('tcp://' + this.guardsIps[i] + ':' + this.guardsPubPorts[i])
       }
       this.subGuardsSocket.subscribe("")
-    }, 2000)
+      this.subGuardsSocket.on("message", (msg) => this.handleGuard(msg))
+    }, 1000)
   }
 
   handleDealer (topic, msg) {
@@ -79,13 +84,15 @@ class Guard {
 
   handleProxy (msg) {
     const message = JSON.parse(msg)
-    let partialResult = this.evaluateSecret(message.value)
+    console.log("Guard-Mensaje recibido de la proxy", message)
+    let partialResult = this.evaluateSecret(message.token[0])
     this.requests.set(message.anonymousId, {message: message, guardsResponses: [partialResult]})
     // Broadcast partial result to other guards
     let broadcastMsg = {
       id: message.anonymousId,
       partialResult: partialResult
     }
+    console.log("Mandando a otros guardias")
     this.pubGuardsSocket.send(JSON.stringify(broadcastMsg))
   }
 
@@ -97,7 +104,7 @@ class Guard {
     request.guardsResponses.push(message.partialResult)
     if (request.guardsResponses.length === this.nGuards) {
       let finalResult = request.guardsResponses.reduce((x, y) => {return x + y})
-      request.set("finalResult", finalResult)
+      request["finalResult"] =  finalResult
       let result
       if (finalResult === request.message.token[1]) {
         result = {
@@ -120,6 +127,7 @@ class Guard {
 
   evaluateSecret (value) {
     let partialResult
+    value = BigInt(value)
     if (this.mode === "ARA2") {
       partialResult = (value ** this.secret) % this.modulo
     } else {
