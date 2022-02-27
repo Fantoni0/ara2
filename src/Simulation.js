@@ -13,12 +13,17 @@ require('dotenv').config()
 // Get arguments
 const args = minimist(process.argv.slice(2), {})
 // Read Args
-const dealers = args.hasOwnProperty('d') ? args['d'] : 3
+let dealers = args.hasOwnProperty('d') ? args['d'] : 3
 const guards = args.hasOwnProperty('g') ? args['g'] : 4
 const bitsize = args.hasOwnProperty('b') ? args['b'] : 128
 const modulo = args.hasOwnProperty('p') ? BigInt(args['p']) : BigInt(373587923)
 const mode = args.hasOwnProperty('m') ? args['m'] : 'ARA2'
 const requests = args.hasOwnProperty('r') ? args['r'] : 10
+
+// Check mode to enforce a single centralized entity.
+if (mode === "TRA2") {
+  dealers = 1
+}
 
 // Prepare params
 const maxDegree = BigInt(2**bitsize - 1)

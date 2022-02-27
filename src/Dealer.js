@@ -38,7 +38,6 @@ class Dealer {
   async init () {
     await this.pushSocket.bind('tcp://' + this.address + ':' + this.portPush)
     await this.pubSocket.bind('tcp://' + this.address + ':' + this.portPub)
-    console.log('tcp://' + this.proxyAddress + ':' + this.proxyPortPubDealers)
     await this.subSocket.connect('tcp://' + this.proxyAddress + ':' + this.proxyPortPubDealers)
     this.subSocket.subscribe("")
     this.subSocket.on("message", (msg) => this.handleProxy(msg))

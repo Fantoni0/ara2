@@ -29,8 +29,7 @@ class User {
   async init() {
     // Bind sockets
     await this.pushProxy.connect('tcp://' + this.proxyAddress + ':' + this.proxyPort)
-    await this.pullProxy.connect('tcp://' + this.address + ':' + this.userPullPort)
-    console.log('PUSH USER tcp://' + this.proxyAddress + ':' + this.proxyPort)
+    await this.pullProxy.bind('tcp://' + this.address + ':' + this.userPullPort)
     this.pullProxy.on("message", (msg) => this.handleProxy(msg))
     this.interval = setInterval(() => {this.sendMsgProxy()}, 1000)
   }
@@ -46,8 +45,15 @@ class User {
       let request = this.requests[message.id]
       if (this.mode === "ARA2") console.log("//TODO: desencriptar valor")
       request.responses = message.responses
-      request["token"] = [request.value,
-        message.responses.reduce((x,y) => {return x.value + y.value})]
+      if (this.mode === "TRA2") {
+        request["token"] = [request.value, message.responses[0].value]
+      }else if (this.mode === "ARA2") {
+        request["token"] = [request.value,
+          message.responses.reduce((x,y) => {return BigInt(x.value) * BigInt(y.value)})]
+      } else {
+        request["token"] = [request.value,
+          message.responses.reduce((x,y) => {return BigInt(x.value) + BigInt(y.value)})]
+      }
 
       // Once the token has been obtained, we can ask for access.
       // Anonymous Id is added to facilitate the handling of access requests by the
@@ -82,7 +88,6 @@ class User {
     }
     this.requests[message.id] = {id: message.id, value: message.value, responses: []}
     this.pushProxy.send(JSON.stringify(message))
-    console.log("Mandando " + JSON.stringify(message))
   }
 
   generateId (size) {

@@ -54,7 +54,7 @@ class Proxy {
     // Communication with guards
     await this.pubGuards.bind('tcp://' + this.address + ':' + this.portPubGuards)
     for (let i = 0; i < this.nGuards; i++) {
-      this.pullGuards[i].bind('tcp://' + this.guardsIps[i] + ':' + this.guardsPushPorts[i])
+      this.pullGuards[i].connect('tcp://' + this.guardsIps[i] + ':' + this.guardsPushPorts[i])
       this.pullGuards[i].on('message', (msg) => this.handleGuard(msg))
     }
   }
@@ -64,18 +64,18 @@ class Proxy {
     console.log("MENSAJE RECIBIDO del usuario " + msg)
     if (message.kind === "getToken") {
       this.nRequests++
-      this.requests.set(message.id, {message: message, dealerResponses: []})
+      this.requests[message.id] = {message: message, dealerResponses: []}
       this.pubDealers.send(JSON.stringify(message))
     } else if (message.kind === "getAccess") {
       this.nRequestsAccess++
-      this.requestsAccess.set(message.id, {message: message, guardsResponses: []})
+      this.requestsAccess[message.anonymousId] =  {message: message, guardsResponses: []}
       this.pubGuards.send(JSON.stringify(message))
     }
   }
 
   handleDealer (msg) {
     const message = JSON.parse(msg)
-    let request = this.requests.get(message.id)
+    let request = this.requests[message.id]
     request.dealerResponses.push(message)
     if (request.dealerResponses.length === this.nDealers) {
       console.log("Got response from all dealers")
@@ -91,9 +91,7 @@ class Proxy {
 
   handleGuard (msg) {
     const message = JSON.parse(msg)
-    console.log("La proxy ha recibido la respuesta final de los guardias", message)
-
-    let request = this.requestsAccess.get(message.id)
+    let request = this.requestsAccess[message.id]
     request.guardsResponses.push(message)
     if (request.guardsResponses.length === this.nGuards) {
       let response = {

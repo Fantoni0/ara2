@@ -10,13 +10,13 @@ BigInt.prototype.fromJSON = function() { return BigInt(this) }
 
 class Guard {
   constructor(id, address, portPush, portPub, nDealers, nGuards,  params) {
-    this.id = id;
+    this.id = id
     this.name = "Guard: " + this.id
-    this.address = address;
-    this.portPush = portPush;
-    this.portPub = portPub;
-    this.nDealers = nDealers;
-    this.nGuards = nGuards;
+    this.address = address
+    this.portPush = portPush
+    this.portPub = portPub
+    this.nDealers = nDealers
+    this.nGuards = nGuards
     this.dealersIps = params.dealersIps
     this.guardsIps = params.guardsIps
     this.dealersPorts = params.dealersPorts
@@ -54,7 +54,7 @@ class Guard {
     this.subProxy.subscribe("")
     this.subProxy.on("message", (msg) => this.handleProxy(msg))
 
-    await this.pushSocket.connect('tcp://' + this.address + ':' + this.portPush)
+    await this.pushSocket.bind('tcp://' + this.address + ':' + this.portPush)
     // Connect to other guards.
     await this.pubGuardsSocket.bind('tcp://' + this.address + ':' + this.portPub)
     setTimeout(() => {
@@ -84,44 +84,79 @@ class Guard {
 
   handleProxy (msg) {
     const message = JSON.parse(msg)
-    console.log("Guard-Mensaje recibido de la proxy", message)
+    console.log("Guard-Mensaje recibido de la proxy", message, this.id)
     let partialResult = this.evaluateSecret(message.token[0])
-    this.requests.set(message.anonymousId, {message: message, guardsResponses: [partialResult]})
-    // Broadcast partial result to other guards
-    let broadcastMsg = {
-      id: message.anonymousId,
-      partialResult: partialResult
+    if (this.requests[message.anonymousId] !== undefined) {
+      console.log("YA ESTABA CREADO", this.id)
+      this.requests[message.anonymousId].guardsResponses.push(partialResult)
+    } else {
+      this.requests[message.anonymousId] = {message: message, guardsResponses: [partialResult]}
     }
-    console.log("Mandando a otros guardias")
-    this.pubGuardsSocket.send(JSON.stringify(broadcastMsg))
+    let request = this.requests[message.anonymousId]
+
+    if (this.checkAllResponses(request, message)) {
+      console.log("I was the last to get a resonse")
+    } else {
+      // Broadcast partial result to other guards
+      let broadcastMsg = {
+        anonymousId: message.anonymousId,
+        partialResult: partialResult
+      }
+      console.log("Mandando a otros guardias")
+      this.pubGuardsSocket.send(JSON.stringify(broadcastMsg))
+    }
   }
 
   handleGuard (msg) {
     const message = JSON.parse(msg)
-    console.log("Mensage de otros guardias", message)
+    console.log("Mensage de otros guardias", message, this.id)
     // Update partial result
-    let request = this.requests.get(message.id)
-    request.guardsResponses.push(message.partialResult)
+    console.log(this.requests, this.id)
+    let request
+    if (this.requests[message.anonymousId] !== undefined) {
+      request = this.requests[message.anonymousId]
+    } else {
+      console.log("NO LO TENIA", this.id)
+      request = {message: message, guardsResponses: []}
+      this.requests[message.anonymousId] = request
+    }
+    request.guardsResponses.push(BigInt(message.partialResult))
+    this.checkAllResponses(request, message)
+  }
+
+  checkAllResponses (request, message) {
+    console.log("Guard" + this.id + ". Checking for " + message.anonymousId)
+
     if (request.guardsResponses.length === this.nGuards) {
-      let finalResult = request.guardsResponses.reduce((x, y) => {return x + y})
-      request["finalResult"] =  finalResult
+      console.log("RESPOSES= ", request.guardsResponses)
+      let finalResult
+      if (this.mode === "ARA2") {
+        finalResult = request.guardsResponses.reduce((x, y) => {return x * y})
+      } else {
+        finalResult = request.guardsResponses.reduce((x, y) => {return x + y})
+      }
+      console.log("FINAL RESULT= ", finalResult)
+      request["finalResult"] = finalResult
       let result
-      if (finalResult === request.message.token[1]) {
+      if (finalResult === BigInt(request.message.token[1])) {
         result = {
-          id: message.id,
+          id: message.anonymousId,
           message: "Access Granted",
           guard: this.id,
           success: true
         }
       } else {
         result = {
-          id: message.id,
+          id: message.anonymousId,
           message: "Access Denied",
           guard: this.id,
           success: false
         }
       }
       this.pushSocket.send(JSON.stringify(result))
+      return true
+    } else {
+      return false
     }
   }
 
