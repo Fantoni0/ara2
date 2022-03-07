@@ -1,20 +1,20 @@
 const crypto = require("crypto");
+const bigInt = require("big-integer")
 BigInt.prototype.toJSON = function() { return this.toString() }
 BigInt.prototype.fromJSON = function() { return BigInt(this) }
 
 module.exports = {
 
   addPolynomials (a, b) {
-    //console.log(a,b)
-    //console.log("SALIDA= ", a,b,  this.removePolynomialDuplicates(this.sortPolynomial(a.concat(b))))
     return this.removePolynomialDuplicates(this.sortPolynomial(a.concat(b)))
   },
 
-  evaluatePolynomial (poly, value) {
-    let result = BigInt(0)
+  evaluatePolynomial (poly, value, modulo) {
+    let result = bigInt()
     poly.forEach((element, index) => {
-      result += value ** element.degree * element.coefficient
+      result = result.add(value.modPow(element.degree, modulo).multiply(element.coefficient))
     })
+    result = result.mod(modulo)
     return result
   },
 
@@ -26,10 +26,8 @@ module.exports = {
   removePolynomialDuplicates (poly) {
     let newPoly = []
     poly.forEach((element, index) => {
-      if (index > 0 && newPoly[newPoly.length - 1].degree === element.degree){
-        //console.log("Se ha dado el caso, ", newPoly[newPoly.length -1], element)
-        newPoly[newPoly.length -1].coefficient = BigInt(newPoly[newPoly.length -1].coefficient) + BigInt(element.coefficient)
-        //console.log("Desp", newPoly[newPoly.length -1])
+      if (index > 0 && newPoly[newPoly.length - 1].degree.eq(element.degree)){
+        newPoly[newPoly.length -1].coefficient = bigInt(newPoly[newPoly.length -1].coefficient).add(bigInt(element.coefficient))
       } else {
         newPoly.push(element)
       }
@@ -40,8 +38,8 @@ module.exports = {
   reCastPolynomialToBigInt (poly) {
     poly.forEach((element, index, array) => {
       array[index] = {
-        degree: BigInt(element.degree),
-        coefficient: BigInt(element.coefficient)
+        degree: bigInt(element.degree),
+        coefficient: bigInt(element.coefficient)
       }
     })
     return poly
@@ -51,14 +49,23 @@ module.exports = {
     return this.reCastPolynomialToBigInt(JSON.parse(JSON.stringify(poly)))
   },
 
-  // Sketchy
-  // TODO: Add hash
+  // Sketchy. Hust for PoC
+  // Future work: Use a proper hash function
   randomDecimalString (len) {
     let str = ''
     for (let i = 0; i  < len; i++) {
-      str += crypto.randomInt(0, 4)
+      str += crypto.randomInt(0, 10)
     }
     return str
-  }
+  },
 
+  standardDeviation (data, mean) {
+    let variance = 0
+    mean = parseFloat(mean.replace(/,/g, '')) // Cast to float
+    for (let i = 0; i < data.length; i++) {
+      variance += Math.pow((data[i] - mean), 2)
+    }
+    variance = variance / data.length
+    return Math.sqrt(variance)
+  }
 }

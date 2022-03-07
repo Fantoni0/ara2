@@ -1,7 +1,7 @@
 // Required Packages
 require('dotenv').config()
 const zmq = require('zeromq')
-
+const bigInt = require("big-integer")
 // Required Classes
 
 BigInt.prototype.toJSON = function() { return this.toString() }
@@ -61,7 +61,6 @@ class Proxy {
 
   handleUser (msg) {
     const message = JSON.parse(msg)
-    console.log("MENSAJE RECIBIDO del usuario " + msg)
     if (message.kind === "getToken") {
       this.nRequests++
       this.requests[message.id] = {message: message, dealerResponses: []}
@@ -78,7 +77,6 @@ class Proxy {
     let request = this.requests[message.id]
     request.dealerResponses.push(message)
     if (request.dealerResponses.length === this.nDealers) {
-      console.log("Got response from all dealers")
       let response = {
         id: request.message.id,
         kind: "dealers",

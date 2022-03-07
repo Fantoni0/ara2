@@ -2,10 +2,9 @@
 //require('dotenv').config()
 const zmq = require('zeromq');
 const crypto = require("crypto");
-
+const bigInt = require("big-integer")
 // Required Classes
 const utils = require("./Utils");
-const util = require("util");
 
 BigInt.prototype.toJSON = function() { return this.toString() }
 BigInt.prototype.fromJSON = function() { return BigInt(this) }
@@ -25,14 +24,14 @@ class Dealer {
     this.usedIds = new Map()
     this.requests = new Map()
     this.maxDegree = params.maxDegree
-    this.termsPolynomial = crypto.randomInt(3, 5)
+    this.termsPolynomial = crypto.randomInt(3, 5) // Hardcoded value for PoC. Feel free to edit.
     this.maxBits = params.maxBits
-    this.modulo = BigInt(params.modulo)
+    this.modulo = bigInt(params.modulo)
     this.mode = params.mode
     this.proxyAddress = params.proxyAddress
     this.proxyPortPubDealers = params.proxyPortPubDealers
     this.secretParts = []
-    this.secret = this.mode === 'ARA2' ? BigInt(0) : []
+    this.secret = this.mode === 'ARA2' ? bigInt(0) : []
   }
 
   async init () {
@@ -49,8 +48,7 @@ class Dealer {
 
   async handleProxy (msg) {
     const message = JSON.parse(msg)
-    console.log("Dealer: MENSAJE DE LA PROXY", message)
-    message.value = BigInt(message.value)
+    message.value = bigInt(message.value)
     let response
     if (this.usedIds.has(message.id)) {
       response = {
@@ -65,9 +63,9 @@ class Dealer {
       this.usedIds.set(message.id, message)
       let value
       if (this.mode === "ARA2") {
-        value = (message.value ** this.secret) % this.modulo
+        value = message.value.modPow(this.secret, this.modulo)
       } else {
-        value = utils.evaluatePolynomial(this.secret, message.value)
+        value = utils.evaluatePolynomial(this.secret, message.value, this.modulo)
       }
       response = {
         id: message.id,
@@ -89,7 +87,6 @@ class Dealer {
             this.secretParts[i].toString() :
             JSON.stringify(this.secretParts[i])
       }
-      //console.log("ENVIANDO paquete" +JSON.stringify(msg)+ ". DEl dealer" +this.id+ "para el guardia" + i)
       this.pubSocket.send([i + 1, JSON.stringify(msg)])
     }
   }
@@ -97,28 +94,30 @@ class Dealer {
   generateRandomSecrets () {
     if (this.mode === 'ARA2') {
       for (let i = 0; i < this.nGuards; i++) {
-        const exp = this.generateRandomExponent()
+        const exp = this.generateRandomExponent().mod(this.modulo)
         this.secretParts.push(exp)
-        this.secret = this.secret + exp % this.modulo
+        this.secret = this.secret.add(exp)
       }
+      this.secret = this.secret.mod(this.modulo)
     } else {
       for (let i = 0; i < this.nGuards; i++) {
         let pol = this.generateRandomPolynomial()
         this.secretParts.push(pol)
         this.secret = utils.addPolynomials(this.secret, utils.clonePolynomial(pol))
       }
+      //console.log("SECRETO DESPUES= ", this.secret)
     }
   }
 
   generateRandomExponent () {
-    return BigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
+    return bigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
   }
 
   generateRandomPolynomial () {
     const poly = []
     for (let i = 0; i < this.termsPolynomial; i++) {
-      const degree = BigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
-      const coefficient = BigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
+      const degree = bigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4))).mod(this.modulo)
+      const coefficient = bigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4))).mod(this.modulo)
       poly.push({
         degree: degree,
         coefficient: coefficient
