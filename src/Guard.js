@@ -96,6 +96,7 @@ class Guard {
 
     if (this.checkAllResponses(request, message)) {
       console.log("I was the last one to get a response.")
+      console.log("This might have been to a synchronization issue.\n A restart might be required.")
     } else {
       // Broadcast partial result to other guards
       let broadcastMsg = {
@@ -115,7 +116,6 @@ class Guard {
     if (this.requests[message.anonymousId] !== undefined) {
       request = this.requests[message.anonymousId]
     } else {
-      console.log("NO LO TENIA", this.id)
       request = {message: message, guardsResponses: []}
       this.requests[message.anonymousId] = request
     }

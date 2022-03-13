@@ -27,11 +27,11 @@ for m in modes:
     access_std_1024 = []
     total_1024 = []
     total_std_1024 = []
-    labels = ["2D / 3G", "3D / 5G", "4D / 6G", "5D / 8G"]
+    labels = ["2D / 3G", "3D / 5G\n                                 Configuration", "4D / 6G", "5D / 8G"]
     for b in bitsizes:
         for i in range(4):
             if m == "TRA2":
-                labels = ["1D / 3G", "1D / 5G", "1D / 6G", "1D / 8G"]
+                labels = ["1D / 3G", "1D / 5G\n                                 Configuration", "1D / 6G", "1D / 8G"]
                 name = "./data/times_dealers_1_guards_" + str(n_guards[i]) + "_bitsize_" + str(b) + "_mode_" + m + ".csv"
             else:
                 name = "./data/times_dealers_" + str(n_dealers[i]) + "_guards_" + str(n_guards[i]) + "_bitsize_" + str(b) + "_mode_" + m + ".csv"
@@ -69,27 +69,28 @@ for m in modes:
     #twin.set_xlabel("Number of bits")
     #p = twin.plot([0, 1, 2], [0, 1, 2], )
 
-    rects1 = ax.bar(x - width/2, token_512, width, yerr=token_std_512, label='GetToken', hatch='-', color='dodgerblue', alpha=0.5, ecolor='black', capsize=3)
-    rects2 = ax.bar(x + width/2, token_1024, width, yerr=token_std_1024, label='GetToken', hatch='-', color='dodgerblue',  alpha=0.5, ecolor='black', capsize=3)
+    rects1 = ax.bar(x - width/2, token_512, width, yerr=token_std_512, label='GetToken', hatch='..', color='w', alpha=0.3, linewidth=0.1, edgecolor='black', ecolor='black', capsize=3)
+    rects2 = ax.bar(x + width/2, token_1024, width, yerr=token_std_1024, label='GetToken', hatch='..', color='w',  alpha=0.3, linewidth=0.1, edgecolor='black', ecolor='black', capsize=3)
 
-    rects3 = ax.bar(x - width/2, access_512, width, yerr=access_std_512, bottom=token_512, label='GetAccess', hatch='o', color='royalblue', alpha=0.5, ecolor='black', capsize=3)
-    rects4 = ax.bar(x + width/2, access_1024, width, yerr=access_std_1024, bottom=token_1024, label='GetAccess', hatch='o', color='royalblue',  alpha=0.5, ecolor='black', capsize=3)
+    rects3 = ax.bar(x - width/2, access_512, width, yerr=access_std_512, bottom=token_512, label='GetAccess', hatch='o', color='w', linewidth=0.1, edgecolor='black', alpha=0.3, ecolor='black', capsize=3)
+    rects4 = ax.bar(x + width/2, access_1024, width, yerr=access_std_1024, bottom=token_1024, label='GetAccess', hatch='o', color='w', linewidth=0.1, edgecolor='black',  alpha=0.3, ecolor='black', capsize=3)
 
-    rects5 = ax.bar(x - width/2, total_512, width, yerr=total_std_512, bottom=bottom_total_512, label='Total', hatch='/', color='darkblue',  alpha=0.5, ecolor='black', capsize=3)
-    rects6 = ax.bar(x + width/2, total_1024, width, yerr=total_std_1024, bottom=bottom_total_1024, label='Total', hatch='/', color='darkblue',  alpha=0.5, ecolor='black', capsize=3)
+    rects5 = ax.bar(x - width/2, total_512, width, bottom=bottom_total_512, label='Total', hatch='//', color='w', linewidth=0.1, edgecolor='black', alpha=0.3, ecolor='black') # yerr=total_std_512, capsize=3
+    rects6 = ax.bar(x + width/2, total_1024, width, bottom=bottom_total_1024, label='Total', hatch='//', color='w', linewidth=0.1, edgecolor='black', alpha=0.3, ecolor='black') #yerr=total_std_1024, capsize=3
 
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Time (ms)')
-    title = 'Times by bitsize, parties and actions in '+ m + ' protocol.'
-    plt.title(title, fontsize=14, fontweight='bold')
+    #title = 'Times by bitsize, parties and actions in '+ m + ' protocol.'
+    #plt.title(title, fontsize=14, fontweight='bold')
     ax.set_xticks(x, labels)
     twin = ax.twiny()
     twin.set_xlim(0,4)
+    twin.set_xlabel("Bitsize of operations")
     twin.set
     #twin.spines.bottom.set_position(("outward", 20))
     twin.set_xticks(x + width*1.5, ["512b   1024b", "512b     1024b", "512b     1024b", "512b     1024b"])
-    ax.legend([rects1, rects3, rects5], ["Get Token", "Get Access", "Total Time"], loc="upper left")
+    ax.legend([rects1, rects3, rects5], ["Get Token", "Get Access", "Communication Time"], loc="upper left")
 
     #ax.bar_label(rects1, label_type='center', padding=-50)
     #ax.bar_label(rects2, label_type='center', padding=-50)

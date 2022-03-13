@@ -1,5 +1,4 @@
 // Required Packages
-//require('dotenv').config()
 const zmq = require('zeromq');
 const crypto = require("crypto");
 const bigInt = require("big-integer")
@@ -40,7 +39,6 @@ class Dealer {
     await this.subSocket.connect('tcp://' + this.proxyAddress + ':' + this.proxyPortPubDealers)
     this.subSocket.subscribe("")
     this.subSocket.on("message", (msg) => this.handleProxy(msg))
-    //this.pubSocket.on("message", (msg) => this.handleGuard(msg))
     this.generateRandomSecrets()
     const parent = this;
     setTimeout( () => parent.distributePartialSecretsToGuards(), 2000)
@@ -105,7 +103,6 @@ class Dealer {
         this.secretParts.push(pol)
         this.secret = utils.addPolynomials(this.secret, utils.clonePolynomial(pol))
       }
-      //console.log("SECRETO DESPUES= ", this.secret)
     }
   }
 
@@ -125,8 +122,6 @@ class Dealer {
     }
     return utils.removePolynomialDuplicates(utils.sortPolynomial(poly))
   }
-
-
 
 }
 

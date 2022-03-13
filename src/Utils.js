@@ -49,7 +49,7 @@ module.exports = {
     return this.reCastPolynomialToBigInt(JSON.parse(JSON.stringify(poly)))
   },
 
-  // Sketchy. Hust for PoC
+  // Sketchy. Just for PoC
   // Future work: Use a proper hash function
   randomDecimalString (len) {
     let str = ''
