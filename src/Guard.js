@@ -9,6 +9,17 @@ BigInt.prototype.toJSON = function() { return this.toString() }
 BigInt.prototype.fromJSON = function() { return BigInt(this) }
 
 class Guard {
+  /**
+   * Guard entity in charge of hadnling the access to the resource.
+   *
+   * @param {number} id Numerical id to identify the Dealer instance.
+   * @param {string} address Address to bind the instance.
+   * @param {number} portPush Port number to set the Push ZMQ socket.
+   * @param {number} portPub Port number to set the Push ZMQ socket.
+   * @param {number} nDealers Number of Dealers in the setup.
+   * @param {number} nGuards Number of Guards in the setup.
+   * @param {Object} params Object containing different parameters associated to ZMQ sockets.
+   */
   constructor(id, address, portPush, portPub, nDealers, nGuards,  params) {
     this.id = id
     this.name = "Guard: " + this.id
@@ -39,6 +50,11 @@ class Guard {
 
   }
 
+  /**
+   * Initiates the Guard instance.
+   * Sets upt ZMQ sockets and connects to Proxy, Dealers and other Guards.
+   * @return {Promise<void>}
+   */
   async init() {
     // Connect socket to all dealers
     for (let i = 0;  i < this.nDealers; i++){
@@ -66,15 +82,22 @@ class Guard {
     }, 1000)
   }
 
+  /**
+   * Handles message containing the partial secret from the Dealers.
+   * @param topic Topic of the SUB ZMQ pattern.
+   * @param msg Message containing the partial secret.
+   */
   handleDealer (topic, msg) {
     const message = JSON.parse(msg)
     const rectopic = JSON.parse(topic)
     if (rectopic !== this.id) return;
+    // Parse content
     if (this.mode !== 'ARA2') {
       message.partialSecret = utils.reCastPolynomialToBigInt(JSON.parse(message.partialSecret))
     } else {
       message.partialSecret = bigInt(message.partialSecret)
     }
+    // Add to personal secret state.
     this.secretParts.push(message.partialSecret)
     if (this.mode === 'ARA2') {
       this.secret = this.secret.add(message.partialSecret)
@@ -84,6 +107,10 @@ class Guard {
     }
   }
 
+  /**
+   * Handles access requests from the users forwarded by the Proxy.
+   * @param msg Message of the proxy.
+   */
   handleProxy (msg) {
     const message = JSON.parse(msg)
     let partialResult = this.evaluateSecret(message.token[0])
@@ -108,6 +135,11 @@ class Guard {
     }
   }
 
+  /**
+   * Handles messages from other guards when looking for consensus.
+   * Decided to grant or reject the access to the resource.
+   * @param msg Message from other guards.
+   */
   handleGuard (msg) {
     const message = JSON.parse(msg)
     // Update partial result
@@ -123,6 +155,14 @@ class Guard {
     this.checkAllResponses(request, message)
   }
 
+  /**
+   * Checks the responses from the other guards.
+   * If aggregating all of them coincides with the presented token, the access is granted.
+   *
+   * @param request Original request from which we are deciding to grant/revoke access.
+   * @param message Message from guard
+   * @return {boolean}
+   */
   checkAllResponses (request, message) {
     if (request.guardsResponses.length === this.nGuards) {
       let finalResult
@@ -156,6 +196,11 @@ class Guard {
     }
   }
 
+  /**
+   * Evaluates Guard's secret in a given point.
+   * @param value Value to evaluate.
+   * @return {BigInteger}
+   */
   evaluateSecret (value) {
     let partialResult
     value = bigInt(value)

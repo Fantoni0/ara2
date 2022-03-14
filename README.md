@@ -18,6 +18,12 @@ The system consists on a set of parties collaborating to grant and obtain access
 - Guards: The parties in charge of validating access-keys and granting access.
 - Proxy: The entity that serves as interface to users to abstract the service.
 
+The PoC implements three modes of operation:
+
+- TRA2: Trusted Registration, Anonymous Access. Where a single centralized Dealer is in charge of the identification and registration.
+- TDRA2: Trusted Distributed Registration, Anonymous Access. A set of decentralized parties substitute the role of the centralized Dealer.
+- ARA2: Anonymous Registration, Anonymous Access. By using homomorphic cryptography, the access-key of the user cannot be traced by either Dealers or Guards.
+
 :warning: This is a repository for research purposes. The code has not been audited.
 Cryptography is a pretty sensible issue and only reputed and tested sources should be used in a production environment.
 Use at your own risk!
@@ -29,8 +35,8 @@ Times might change in different environments.
 Assuming that you have pip installed:
 ```
 git clone https://github.com/Fantoni0/ara2
-cd ara2/src
-pip install -r requirements.txt
+cd ara2
+npm install
 ```
 
 ### Requirements

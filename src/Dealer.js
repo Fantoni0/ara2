@@ -9,7 +9,16 @@ BigInt.prototype.toJSON = function() { return this.toString() }
 BigInt.prototype.fromJSON = function() { return BigInt(this) }
 
 class Dealer {
-
+  /**
+   * Dealer entity in charge of verifying credentials and issuing access-keys.
+   *
+   * @param {number} id Numerical id to identify the Dealer instance.
+   * @param {string} address Address to bind the instance.
+   * @param {number} portPush Port number to set the Push ZMQ socket.
+   * @param {number} portPub Port number to set the Push ZMQ socket.
+   * @param {number} nGuards Number of Guards in the setup.
+   * @param {Object} params Object containing different parameters associated to ZMQ sockets.
+   */
   constructor(id, address, portPush, portPub, nGuards, params) {
     this.id = id;
     this.name = "Dealer: " + this.id
@@ -33,6 +42,10 @@ class Dealer {
     this.secret = this.mode === 'ARA2' ? bigInt(0) : []
   }
 
+  /**
+   * Launches the Dealer instance by setting up the ZMQ sockets, and generating its secrets.
+   * @return {Promise<void>}
+   */
   async init () {
     await this.pushSocket.bind('tcp://' + this.address + ':' + this.portPush)
     await this.pubSocket.bind('tcp://' + this.address + ':' + this.portPub)
@@ -44,6 +57,11 @@ class Dealer {
     setTimeout( () => parent.distributePartialSecretsToGuards(), 2000)
   }
 
+  /**
+   * Handles user's requests forwarded by Proxy.
+   * @param msg Message sent by the Proxy.
+   * @return {Promise<void>}
+   */
   async handleProxy (msg) {
     const message = JSON.parse(msg)
     message.value = bigInt(message.value)
@@ -76,6 +94,10 @@ class Dealer {
     this.pushSocket.send(JSON.stringify(response))
   }
 
+  /**
+   * Distribute the Dealer's personal secret to all the Guards.
+   * @return {Promise<void>}
+   */
   async distributePartialSecretsToGuards () {
     for (let i = 0; i < this.nGuards; i++) {
       const msg = {
@@ -89,6 +111,9 @@ class Dealer {
     }
   }
 
+  /**
+   * Generates random secrets to be used as access-keys generators.
+   */
   generateRandomSecrets () {
     if (this.mode === 'ARA2') {
       for (let i = 0; i < this.nGuards; i++) {
@@ -106,10 +131,20 @@ class Dealer {
     }
   }
 
+  /**
+   * It generates a random Big Integer to be used as exponent.
+   * @return {bigInt.BigInteger | *}
+   */
   generateRandomExponent () {
     return bigInt(utils.randomDecimalString(Math.ceil(this.maxBits / 4)))
   }
 
+  /**
+   * It generates a random polynomial to be used as secret.
+   * The polynomial is structured as a list of {degree, coefficient} items.
+   * Not the best implementation. But lists can be stringified to send over the network (as opposed to maps).
+   * @return {[]}
+   */
   generateRandomPolynomial () {
     const poly = []
     for (let i = 0; i < this.termsPolynomial; i++) {

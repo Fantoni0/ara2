@@ -8,6 +8,19 @@ BigInt.prototype.toJSON = function() { return this.toString() }
 BigInt.prototype.fromJSON = function() { return BigInt(this) }
 
 class Proxy {
+
+  /**
+   * Proxy service to communicate users and dealers/guards.
+   * It simply serves as a single point interface for a simplified user interaction.
+   *
+   * @param {string} address Address to bind the Proxy instacne.
+   * @param {number} portPull Port to set up the ZMQ pull socket.
+   * @param {number} nDealers Number of dealers in the setup.
+   * @param {number} nGuards Number of guards in the setup.
+   * @param {number[]} dealersPub List of port number of pub socket from dealers.
+   * @param {number[]} guardsPub List of port number of pub socket from dealers.
+   * @param {Object} params Object containing different parameters associated to ZMQ sockets.
+   */
   constructor (address, portPull, nDealers, nGuards, dealersPub, guardsPub, params) {
     this.address = address
     this.portPull = portPull
@@ -39,6 +52,11 @@ class Proxy {
     }
   }
 
+  /**
+   * Initiates the User Object by setting up the ZMQ sockets.
+   * Also connects to the Dealers and Guards.
+   * @return {Promise<void>}
+   */
   async init () {
     // Bind sockets
     // Communication with user
@@ -59,6 +77,11 @@ class Proxy {
     }
   }
 
+  /**
+   * Handles user request and updates the internal state to keep track of requests.
+   * Forwards the message to the desired parties.
+   * @param msg Message sent by the user.
+   */
   handleUser (msg) {
     const message = JSON.parse(msg)
     if (message.kind === "getToken") {
@@ -72,6 +95,10 @@ class Proxy {
     }
   }
 
+  /**
+   * Handles responses from the Dealers and sends it back to the User.
+   * @param msg Message sent by the Dealer.
+   */
   handleDealer (msg) {
     const message = JSON.parse(msg)
     let request = this.requests[message.id]
@@ -87,6 +114,10 @@ class Proxy {
     }
   }
 
+  /**
+   * Handles responses from the Guards and sends it back to the User.
+   * @param msg Message sent by the Guard.
+   */
   handleGuard (msg) {
     const message = JSON.parse(msg)
     let request = this.requestsAccess[message.id]
