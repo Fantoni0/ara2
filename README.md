@@ -1,5 +1,5 @@
-# ARA2: Anonymous Registration, Anonymous Access
-Python implementation of an anonymous distributed access protocol.
+# How to Grant Anonymous Access
+Javascript implementation of an anonymous distributed access protocol.
 The code is framed within research of different protocols for anonymous registration and access.
 See Citation section at the bottom of the page.
 
@@ -32,19 +32,12 @@ Use at your own risk!
 Times might change in different environments.
 
 ## Installation
-Assuming that you have pip installed:
+Assuming that you have node installed:
 ```
 git clone https://github.com/Fantoni0/ara2
 cd ara2
 npm install
 ```
-
-### Requirements
-The library has minimal requirements. All of them are included in requirements.txt.
-Following the installation process solves the dependencies.
-- `pyzmq` for messaging layer.
-- `python-dotenv` for config files.
-- `matplotlib` for plotting the results.
 
 ## Usage
 An example of how to use the library:
