@@ -41,15 +41,22 @@ npm install
 
 ## Usage
 An example of how to use the library:
+
+This snippet will launch a simulation that performs 10 requests, with 1 dealer, 7 guards under the mode TRA2.
 ```
-CODE HERE
+./src/Simulation.js -d 1 -g 7 -b 512 -r 10 -m TRA2
 ```
 
-## Installation
-Future improvements:
-    - Add check to ensure the setup finalized properly.
-    - Change patterns so that every conversation has a unique socket.
-    - Encrypt communications.
+This second snippet will launch a simulation that performs 10 requests, with 3 dealer, 5 guards under the mode ARA2.
+It will save the results in CSV format. 
+```
+./src/Simulation.js -d 3 -g 5 -b 1024 -r 10 -m ARA2 -s
+```
+
+## Future Improvements
+- Add check to ensure the setup finalized properly.
+- Change patterns so that every conversation has a unique socket.
+- Encrypt communications.
 
 ## Citation
 This repository is part of a research article carried out by [ALFA](https://alfa.webs.upv.es/) research group.
