@@ -24,6 +24,8 @@ The PoC implements three modes of operation:
 - TDRA2: Trusted Distributed Registration, Anonymous Access. A set of decentralized parties substitute the role of the centralized Dealer.
 - ARA2: Anonymous Registration, Anonymous Access. By using homomorphic cryptography, the access-key of the user cannot be traced by either Dealers or Guards.
 
+ARA2 has been tested with 512, 1024 and 2048 bits keys.  
+
 :warning: This is a repository for research purposes. The code has not been audited.
 Cryptography is a pretty sensible issue and only reputed and tested sources should be used in a production environment.
 Use at your own risk!
@@ -54,8 +56,9 @@ It will save the results in CSV format.
 ```
 
 ## Future Improvements
-- Add check to ensure the setup finalized properly.
+- Add check to ensure the setup finalized properly and all parties are operating correctly.
 - Change patterns so that every conversation has a unique socket.
+- Replace ZMQ sockets with websockets.
 - Encrypt communications.
 
 ## Citation
