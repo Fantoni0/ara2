@@ -1,14 +1,13 @@
 // Required Packages
 require('dotenv').config()
 const zmq = require('zeromq')
-const bigInt = require("big-integer")
+const bigInt = require('big-integer')
 // Required Classes
 
-BigInt.prototype.toJSON = function() { return this.toString() }
-BigInt.prototype.fromJSON = function() { return BigInt(this) }
+BigInt.prototype.toJSON = function () { return this.toString() }
+BigInt.prototype.fromJSON = function () { return BigInt(this) }
 
 class Proxy {
-
   /**
    * Proxy service to communicate users and dealers/guards.
    * It simply serves as a single point interface for a simplified user interaction.
@@ -41,7 +40,7 @@ class Proxy {
     this.userAddress = params.userAddress
     this.userPortPull = params.userPortPull
     this.requests = new Map()
-    this.requestsAccess = new Map ()
+    this.requestsAccess = new Map()
     this.nRequests = 0
     this.nRequestsAccess = 0
     for (let i = 0; i < this.nDealers; i++) {
@@ -62,7 +61,7 @@ class Proxy {
     // Communication with user
     await this.pullUsers.bind('tcp://' + this.address + ':' + this.portPull)
     await this.pushUser.connect('tcp://' + this.userAddress + ':' + this.userPortPull)
-    this.pullUsers.on("message", (msg) => this.handleUser(msg))
+    this.pullUsers.on('message', (msg) => this.handleUser(msg))
     // Communication with Dealers
     await this.pubDealers.bind('tcp://' + this.address + ':' + this.portPubDealers)
     for (let i = 0; i < this.nDealers; i++) {
@@ -84,13 +83,13 @@ class Proxy {
    */
   handleUser (msg) {
     const message = JSON.parse(msg)
-    if (message.kind === "getToken") {
+    if (message.kind === 'getToken') {
       this.nRequests++
-      this.requests[message.id] = {message: message, dealerResponses: []}
+      this.requests[message.id] = { message: message, dealerResponses: [] }
       this.pubDealers.send(JSON.stringify(message))
-    } else if (message.kind === "getAccess") {
+    } else if (message.kind === 'getAccess') {
       this.nRequestsAccess++
-      this.requestsAccess[message.anonymousId] =  {message: message, guardsResponses: []}
+      this.requestsAccess[message.anonymousId] = { message: message, guardsResponses: [] }
       this.pubGuards.send(JSON.stringify(message))
     }
   }
@@ -101,12 +100,12 @@ class Proxy {
    */
   handleDealer (msg) {
     const message = JSON.parse(msg)
-    let request = this.requests[message.id]
+    const request = this.requests[message.id]
     request.dealerResponses.push(message)
     if (request.dealerResponses.length === this.nDealers) {
-      let response = {
+      const response = {
         id: request.message.id,
-        kind: "dealers",
+        kind: 'dealers',
         value: request.message.value,
         responses: request.dealerResponses
       }
@@ -120,19 +119,17 @@ class Proxy {
    */
   handleGuard (msg) {
     const message = JSON.parse(msg)
-    let request = this.requestsAccess[message.id]
+    const request = this.requestsAccess[message.id]
     request.guardsResponses.push(message)
     if (request.guardsResponses.length === this.nGuards) {
-      let response = {
+      const response = {
         id: message.id,
-        kind: "guards",
+        kind: 'guards',
         responses: request.guardsResponses
       }
       this.pushUser.send(JSON.stringify(response))
     }
-
   }
-
 }
 
-module.exports = Proxy;
+module.exports = Proxy

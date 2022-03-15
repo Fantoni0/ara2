@@ -3,7 +3,8 @@
   "description": "A PoC for Anonymous registration and anonymous access",
   "author": "Fantoni0",
   "scripts": {
-    "test": "standard"
+    "lint": "standard",
+    "lint fix": "standard --fix"
   },
   "dependencies": {
     "big-integer": "^1.6.51",

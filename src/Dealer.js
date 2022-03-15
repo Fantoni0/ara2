@@ -1,12 +1,12 @@
 // Required Packages
-const zmq = require('zeromq');
-const crypto = require("crypto");
-const bigInt = require("big-integer")
+const zmq = require('zeromq')
+const crypto = require('crypto')
+const bigInt = require('big-integer')
 // Required Classes
-const utils = require("./Utils");
+const utils = require('./Utils')
 
-BigInt.prototype.toJSON = function() { return this.toString() }
-BigInt.prototype.fromJSON = function() { return BigInt(this) }
+BigInt.prototype.toJSON = function () { return this.toString() }
+BigInt.prototype.fromJSON = function () { return BigInt(this) }
 
 class Dealer {
   /**
@@ -19,16 +19,16 @@ class Dealer {
    * @param {number} nGuards Number of Guards in the setup.
    * @param {Object} params Object containing different parameters associated to ZMQ sockets.
    */
-  constructor(id, address, portPush, portPub, nGuards, params) {
-    this.id = id;
-    this.name = "Dealer: " + this.id
-    this.address = address;
-    this.portPush = portPush;
-    this.portPub = portPub;
-    this.nGuards = nGuards;
+  constructor (id, address, portPush, portPub, nGuards, params) {
+    this.id = id
+    this.name = 'Dealer: ' + this.id
+    this.address = address
+    this.portPush = portPush
+    this.portPub = portPub
+    this.nGuards = nGuards
     this.pushSocket = zmq.socket('push')
     this.pubSocket = zmq.socket('pub')
-    this.subSocket = zmq.socket("sub")
+    this.subSocket = zmq.socket('sub')
     this.usedIds = new Map()
     this.requests = new Map()
     this.maxDegree = params.maxDegree
@@ -50,11 +50,11 @@ class Dealer {
     await this.pushSocket.bind('tcp://' + this.address + ':' + this.portPush)
     await this.pubSocket.bind('tcp://' + this.address + ':' + this.portPub)
     await this.subSocket.connect('tcp://' + this.proxyAddress + ':' + this.proxyPortPubDealers)
-    this.subSocket.subscribe("")
-    this.subSocket.on("message", (msg) => this.handleProxy(msg))
+    this.subSocket.subscribe('')
+    this.subSocket.on('message', (msg) => this.handleProxy(msg))
     this.generateRandomSecrets()
-    const parent = this;
-    setTimeout( () => parent.distributePartialSecretsToGuards(), 2000)
+    const parent = this
+    setTimeout(() => parent.distributePartialSecretsToGuards(), 2000)
   }
 
   /**
@@ -70,7 +70,7 @@ class Dealer {
       response = {
         id: message.id,
         value: NaN,
-        message: "The identification was already used",
+        message: 'The identification was already used',
         dealer: this.id,
         success: false
       }
@@ -78,7 +78,7 @@ class Dealer {
       this.requests.set(message.id, message)
       this.usedIds.set(message.id, message)
       let value
-      if (this.mode === "ARA2") {
+      if (this.mode === 'ARA2') {
         value = message.value.modPow(this.secret, this.modulo)
       } else {
         value = utils.evaluatePolynomial(this.secret, message.value, this.modulo)
@@ -86,7 +86,7 @@ class Dealer {
       response = {
         id: message.id,
         value: value,
-        message: "Here is your token",
+        message: 'Here is your token',
         dealer: this.id,
         success: true
       }
@@ -102,10 +102,10 @@ class Dealer {
     for (let i = 0; i < this.nGuards; i++) {
       const msg = {
         sender: this.name,
-        receiver: "Guard: " + i,
-        partialSecret: this.mode === 'ARA2' ?
-            this.secretParts[i].toString() :
-            JSON.stringify(this.secretParts[i])
+        receiver: 'Guard: ' + i,
+        partialSecret: this.mode === 'ARA2'
+          ? this.secretParts[i].toString()
+          : JSON.stringify(this.secretParts[i])
       }
       this.pubSocket.send([i + 1, JSON.stringify(msg)])
     }
@@ -124,7 +124,7 @@ class Dealer {
       this.secret = this.secret.mod(this.modulo)
     } else {
       for (let i = 0; i < this.nGuards; i++) {
-        let pol = this.generateRandomPolynomial()
+        const pol = this.generateRandomPolynomial()
         this.secretParts.push(pol)
         this.secret = utils.addPolynomials(this.secret, utils.clonePolynomial(pol))
       }
@@ -157,7 +157,6 @@ class Dealer {
     }
     return utils.removePolynomialDuplicates(utils.sortPolynomial(poly))
   }
-
 }
 
-module.exports = Dealer;
+module.exports = Dealer
