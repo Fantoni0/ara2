@@ -9,7 +9,7 @@
   "dependencies": {
     "big-integer": "^1.6.51",
     "dotenv": "^16.0.0",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "node-forge": "^1.2.1",
     "zeromq": "^5.2.8"
   },
