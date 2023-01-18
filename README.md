@@ -62,6 +62,15 @@ It will save the results in CSV format.
 - Encrypt communications.
 
 ## Citation
-This repository is part of a research article carried out by [ALFA](https://alfa.webs.upv.es/) research group.
-Spanish Patent Application (P202130890).
-Article yet to be published. The link will be here provided.
+This repository is also related to a Spanish Patent (P202130890). If you use this code, please cite:
+```
+@article{larriba2022grant,
+title={How to Grant Anonymous Access},
+author={Larriba, Antonio M and L{\'o}pez, Dami{\'a}n},
+journal={IEEE Transactions on Information Forensics and Security},
+volume={18},
+pages={613--625},
+year={2022},
+publisher={IEEE}
+}
+```
